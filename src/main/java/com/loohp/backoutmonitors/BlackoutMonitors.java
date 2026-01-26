@@ -52,9 +52,7 @@ public class BlackoutMonitors {
 
     private static final Random RANDOM = new Random();
 
-    private final List<JFrame> frames = new ArrayList<>();
-    private final List<JLabel> timeLabels = new ArrayList<>();
-    private final List<JLabel> dateLabels = new ArrayList<>();
+    private final List<ScreenFrame> frames = new ArrayList<>();
 
     private int burnInDx = 0;
     private int burnInDy = 0;
@@ -83,6 +81,7 @@ public class BlackoutMonitors {
 
         for (GraphicsDevice device : devices) {
             Rectangle bounds = device.getDefaultConfiguration().getBounds();
+            boolean isPrimary = bounds.x == 0 && bounds.y == 0;
 
             JFrame frame = new JFrame(device.getDefaultConfiguration());
             frame.setUndecorated(true);
@@ -93,26 +92,28 @@ public class BlackoutMonitors {
             content.setBackground(Color.BLACK);
             frame.setContentPane(content);
 
-            JLabel timeLabel = new JLabel("", SwingConstants.CENTER);
-            JLabel dateLabel = new JLabel("", SwingConstants.CENTER);
-
-            content.add(timeLabel);
-            content.add(dateLabel);
-
             frame.setBounds(bounds);
             frame.setCursor(invisibleCursor);
 
             bindEscToQuit(frame);
 
-            frames.add(frame);
-            timeLabels.add(timeLabel);
-            dateLabels.add(dateLabel);
+            if (isPrimary) {
+                JLabel timeLabel = new JLabel("", SwingConstants.CENTER);
+                JLabel dateLabel = new JLabel("", SwingConstants.CENTER);
+
+                content.add(timeLabel);
+                content.add(dateLabel);
+
+                frames.add(new ScreenFrame(frame, timeLabel, dateLabel));
+            } else {
+                frames.add(new ScreenFrame(frame));
+            }
 
             closeOnFocusLoss(frame);
         }
 
-        for (JFrame f : frames) {
-            f.setVisible(true);
+        for (ScreenFrame f : frames) {
+            f.frame().setVisible(true);
         }
 
         layoutLabels();
@@ -120,8 +121,8 @@ public class BlackoutMonitors {
         startClockTimer();
 
         if (!frames.isEmpty()) {
-            frames.getFirst().toFront();
-            frames.getFirst().requestFocus();
+            frames.getFirst().frame().toFront();
+            frames.getFirst().frame().requestFocus();
         }
 
         try {
@@ -148,28 +149,31 @@ public class BlackoutMonitors {
     }
 
     private void layoutLabels() {
-        for (int i = 0; i < frames.size(); i++) {
-            JFrame frame = frames.get(i);
-            JLabel timeLabel = timeLabels.get(i);
-            JLabel dateLabel = dateLabels.get(i);
+        for (ScreenFrame screenFrame : frames) {
+            if (screenFrame.hasLabels()) {
+                JFrame frame = screenFrame.frame();
 
-            int w = frame.getContentPane().getWidth();
-            int h = frame.getContentPane().getHeight();
+                JLabel timeLabel = screenFrame.timeLabel();
+                JLabel dateLabel = screenFrame.dateLabel();
 
-            timeLabel.setFont(timeFont);
-            dateLabel.setFont(dateFont);
+                int w = frame.getContentPane().getWidth();
+                int h = frame.getContentPane().getHeight();
 
-            timeLabel.setForeground(dim(Color.WHITE));
-            dateLabel.setForeground(dim(Color.WHITE));
+                timeLabel.setFont(timeFont);
+                dateLabel.setFont(dateFont);
 
-            int totalHeight = TIME_FONT_SIZE + DATE_FONT_SIZE + 20;
-            int centerY = (int) (h * (1.0 / 4.0));
+                timeLabel.setForeground(dim(Color.WHITE));
+                dateLabel.setForeground(dim(Color.WHITE));
 
-            int timeHeight = TIME_FONT_SIZE + 10;
-            int dateHeight = DATE_FONT_SIZE + 10;
+                int totalHeight = TIME_FONT_SIZE + DATE_FONT_SIZE + 20;
+                int centerY = (int) (h * (1.0 / 4.0));
 
-            timeLabel.setBounds(burnInDx, centerY - totalHeight / 2 + burnInDy, w, timeHeight);
-            dateLabel.setBounds(burnInDx, centerY - totalHeight / 2 + burnInDy + timeHeight, w, dateHeight);
+                int timeHeight = TIME_FONT_SIZE + 10;
+                int dateHeight = DATE_FONT_SIZE + 10;
+
+                timeLabel.setBounds(burnInDx, centerY - totalHeight / 2 + burnInDy, w, timeHeight);
+                dateLabel.setBounds(burnInDx, centerY - totalHeight / 2 + burnInDy + timeHeight, w, dateHeight);
+            }
         }
     }
 
@@ -184,11 +188,11 @@ public class BlackoutMonitors {
         String time = now.format(TIME_FMT);
         String date = now.format(DATE_FMT);
 
-        for (JLabel l : timeLabels) {
-            l.setText(time);
-        }
-        for (JLabel l : dateLabels) {
-            l.setText(date);
+        for (ScreenFrame screenFrame : frames) {
+            if (screenFrame.hasLabels()) {
+                screenFrame.timeLabel().setText(time);
+                screenFrame.dateLabel().setText(date);
+            }
         }
     }
 
@@ -222,9 +226,9 @@ public class BlackoutMonitors {
     }
 
     private void quit() {
-        for (JFrame f : frames) {
+        for (ScreenFrame f : frames) {
             try {
-                f.dispose();
+                f.frame().dispose();
             } catch (Exception ignored) {
             }
         }
@@ -283,5 +287,14 @@ public class BlackoutMonitors {
                 }
             }
         });
+    }
+
+    private record ScreenFrame(JFrame frame, JLabel timeLabel, JLabel dateLabel) {
+        public ScreenFrame(JFrame frame) {
+            this(frame, null, null);
+        }
+        public boolean hasLabels() {
+            return timeLabel != null && dateLabel != null;
+        }
     }
 }
