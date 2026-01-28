@@ -48,7 +48,7 @@ public class BlackoutMonitors {
     private static final int BURN_IN_MAX_SHIFT_PX = 20;
     private static final int BURN_IN_INTERVAL_MS = (int) Duration.ofMinutes(15).toMillis();
 
-    private static final float DIM_FACTOR = 0.3F;
+    private static final float DIM_FACTOR = 0.5F;
 
     private static final Random RANDOM = new Random();
 
