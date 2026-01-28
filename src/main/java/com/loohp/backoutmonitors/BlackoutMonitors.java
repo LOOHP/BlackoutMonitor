@@ -45,8 +45,8 @@ public class BlackoutMonitors {
     private static final int TIME_FONT_SIZE = 190;
     private static final int DATE_FONT_SIZE = 40;
 
-    private static final int BURN_IN_MAX_SHIFT_PX = 20;
-    private static final int BURN_IN_INTERVAL_MS = (int) Duration.ofMinutes(15).toMillis();
+    private static final int BURN_IN_MAX_SHIFT_PX = 30;
+    private static final int BURN_IN_INTERVAL_MS = (int) Duration.ofMinutes(10).toMillis();
 
     private static final float DIM_FACTOR = 0.5F;
 
